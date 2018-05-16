@@ -1,0 +1,81 @@
+GlowScript 2.7 VPython
+
+#Model of the Jupiter System
+
+G = 6.67e-11
+
+io_distance = 421.7e6
+europa_distance = 670.9e6
+ganymede_distance = 1070.4e6
+callisto_distance = 1882.7e6
+
+jupiter_radius=71492
+io_radius=1821.6
+europa_radius=1560.8
+ganymede_radius=2634.1
+callisto_radius=2410.3
+
+jupiter = sphere(pos = vec(0,0,0), radius = 2000*jupiter_radius, color=color.orange)
+io = sphere(pos = vec(io_distance, 0, 0), radius = 2000*io_radius, color=color.yellow, make_trail = True)
+europa = sphere(pos = vec(europa_distance,0,0), radius = 2000*europa_radius, color=color.white, make_trail = True)
+ganymede = sphere(pos = vec(ganymede_distance,0,0), radius = 2000*ganymede_radius, color=color.cyan, make_trail = True)
+callisto = sphere(pos = vec(callisto_distance,0,0), radius = 2000*callisto_radius, color=color.purple, make_trail = True)
+
+iovel = 17334 * vec(0,1,0)
+europavel = 13740 * vec(0,1,0)
+ganymedevel = 10880 * vec(0,1,0)
+callistovel = 8204 * vec(0,1,0)
+
+jupiter.mass = 1.898e27
+io.mass = 8.931e22
+europa.mass = 4.799e22
+ganymede.mass = 1.4819e23
+callisto.mass = 1.0759e23
+
+scene.range=1.25*mag(callisto.pos)
+
+#clipper.mass = 352
+#clipper.v = 8800
+
+dt = 10
+
+while True:
+        rate(5000)
+
+# IO
+
+        ri = io.pos - jupiter.pos 
+        magri = mag(ri)
+        riunit=norm(ri) 
+        Fio = G * io.mass * jupiter.mass/(magri)**2 * riunit 
+        iovel = iovel - Fio/io.mass * dt 
+        io.pos = io.pos + iovel * dt 
+        
+# EUROPA        
+        
+        re = europa.pos - jupiter.pos 
+        magre = mag(re)
+        reunit=norm(re) 
+        Feuropa = G * europa.mass * jupiter.mass/(magre)**2 * reunit 
+        europavel = europavel - Feuropa/europa.mass * dt 
+        europa.pos = europa.pos + europavel * dt 
+        
+# GANYMEDE        
+        
+        rg = ganymede.pos - jupiter.pos 
+        magrg = mag(rg)
+        rgunit=norm(rg) 
+        Fganymede = G * ganymede.mass * jupiter.mass/(magrg)**2 * rgunit 
+        ganymedevel = ganymedevel - Fganymede/ganymede.mass * dt 
+        ganymede.pos = ganymede.pos + ganymedevel * dt 
+        
+# CALLISTO        
+        
+        rc = callisto.pos - jupiter.pos 
+        magrc = mag(rc)
+        rcunit=norm(rc) 
+        Fcallisto = G * callisto.mass * jupiter.mass/(magrc)**2 * rcunit 
+        callistovel = callistovel - Fcallisto/callisto.mass * dt 
+        callisto.pos = callisto.pos + callistovel * dt 
+        
+        
