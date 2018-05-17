@@ -1,0 +1,122 @@
+launch_direction = norm(vec(1,1,0))
+
+Mrocket = launch_mass
+rocketvel = rocketvel_initial*launch_direction
+procket = Mrocket*rocketvel
+F_thrust = launch_direction*(booster_thrust+stage1_thrust)
+Fdrag=-launch_direction*(((1/2)*rho)*((mag(rocketvel)**2)*drag_co*A))
+print(rocketvel)
+
+t = 0
+dt = 24*3600
+while True:
+  
+  rate(1000)
+  
+  
+  rho=1/(mag(rocket.pos)**2)
+  if t<booster_burntime:
+    booster_mass=1180000-564*t
+  if t<stage1_burntime:
+    rocket_stage1_mass=979452-810*t
+  launch_mass=clipper_mass+rocket_stage1_mass+rocket_stage2_mass+booster_mass
+  if mag(rocketvel)==0 and t<1:
+    direction=launch_direction
+  F_drag=-direction*(((1/2)*rho)*((mag(rocketvel))**2)*drag_co*A)
+  print('hola')
+  if t<booster_burntime:
+      r = rocket.pos - earth.pos
+      runit = norm(r)
+      F_gravity = G * Mearth * (clipper_mass + 2 * booster_mass + rocket_stage1_mass + rocket_stage2_mass) / mag(r)**2 * runit
+  elif t<stage1_burntime:
+      F_gravity = G * Mearth * (clipper_mass + rocket_stage1_mass + rocket_stage2_mass) / mag(r)**2 * runit
+  elif t<stage2_burntime:
+      F_gravity = G * Mearth * (clipper_mass + rocket_stage2_mass) / mag(r)**2 * runit
+  else:
+      F_gravity = G * Mearth * (clipper_mass) / mag(r)**2 * runit
+  print('hola')
+  r1 = earth.pos - rocket.pos                        
+  r2 = mars.pos - rocket.pos                         
+  r3 = sun.pos - rocket.pos   
+  r4 = venus.pos - rocket.pos
+  r5 = jupiter.pos - rocket.pos
+  venusF = (G*Mvenus*Mrocket)*r4/mag(r4)**3
+  jupiterF = (G*Mjupiter*Mrocket)*r5/mag(r5)**3
+  earthF = (G*Mearth*Mrocket)*r1/mag(r1)**3          
+  marsF = (G*Mmars*Mrocket)*r2/mag(r2)**3            
+  sunF = (G*Msun*Mrocket)*r3/mag(r3)**3 
+  print(F_drag, F_gravity, earthF,F_thrust)
+  Fnet=F_thrust+F_drag+F_gravity+venusF+earthF+marsF+jupiterF+sunF
+  print('fnet',Fnet)
+  if t>booster_burntime:
+    F_thrust=direction*(stage1_thrust)
+  if t>stage1_burntime:
+    F_thrust=direction*(stage2_thrust)
+    Mrocket=launch_mass-booster_mass-rocket_stage1_mass #boosters and stage 1 drop
+    rocket_stage2_mass=30710-24.1*t
+  
+  if t>stage2_burntime:
+    F_thrust=direction*0
+    Mrocket=Mrocket-rocket_stage2_mass #stage 2 drops from the clipper
+  
+  procket = procket + dt*Fnet
+  rocketvel = rocketvel/Mrocket
+  rocket.pos = rocket.pos + dt*rocketvel
+  print(rocket.pos)
+  r1 = sun.pos - earth.pos         #sets r to be the distance from the sun to earth's orbit
+  r2 = mars.pos - earth.pos
+  r3 = venus.pos - earth.pos
+  r4 = jupiter.pos - earth.pos
+  sunF = (1*G*Msun*Mearth)*r1/mag(r1)**3    #force of sun on earth at that distance of r
+  marsF = (1*G*Mmars*Mearth)*r2/mag(r2)**3
+  venusF = (1*G*Mvenus*Mearth)*r3/mag(r3)**3
+  jupiterF = (1*G*Mjupiter*Mearth)*r4/mag(r4)**3
+  totalF = sunF+marsF+venusF+jupiterF
+  pearth = pearth + dt*totalF              #updates momentum of earth
+  earthvel = pearth/Mearth                   #updates velocity of earth using momentum (p = m*v)
+  earth.pos = earth.pos + dt*earthvel       #updates earth's position
+  #venus
+  r1 = sun.pos - venus.pos
+  r2 = earth.pos - venus.pos
+  r3 = mars.pos - venus.pos
+  r4 = jupiter.pos - venus.pos
+  sunF = (1*G*Msun*Mvenus)*r1/mag(r1)**3
+  earthF = (1*G*Mearth*Mvenus)*r2/mag(r2)**3
+  marsF = (1*G*Mmars*Mvenus)*r3/mag(r3)**3
+  jupiterF = (1*G*Mvenus*Mjupiter)*r4/mag(r4)**3
+  totalF = sunF+earthF+marsF+jupiterF
+  pvenus = pvenus + dt*totalF
+  venusvel = pvenus/Mvenus
+  venus.pos=venus.pos + dt*venusvel
+  #mars
+  r1 = sun.pos - mars.pos    
+  r2 = venus.pos - mars.pos
+  r3 = earth.pos - mars.pos
+  r4 = jupiter.pos - mars.pos
+  sunF = (1*G*Msun*Mmars)*r1/mag(r1)**3    
+  venusF = (1*G*Mvenus*Mmars)*r2/mag(r2)**3
+  earthF = (1*G*Mearth*Mmars)*r3/mag(r3)**3
+  jupiterF = (1*G*Mjupiter*Mmars)*r4/mag(r4)**3
+  totalF = sunF+venusF+earthF+jupiterF
+  pmars = pmars + dt*totalF 
+  marsvel = pmars/Mmars
+  print('marsvel', marsvel)
+  mars.pos = mars.pos + dt*marsvel
+  print('marspos', mars.pos)
+  
+  #jupiter
+  r1 = sun.pos - jupiter.pos
+  r2 = venus.pos - jupiter.pos
+  r3 = earth.pos - jupiter.pos
+  r4 = mars.pos - jupiter.pos
+  sunF = (1*G*Msun*Mjupiter)*r1/mag(r1)**3
+  venusF = (1*G*Mvenus*Mjupiter)*r2/mag(r2)**3
+  earthF = (1*G*Mearth*Mjupiter)*r3/mag(r3)**3
+  marsF = (1*G*Mmars*Mjupiter)*r4/mag(r4)**3
+  totalF = sunF+marsF+earthF+venusF
+  pjupiter = pjupiter + dt*totalF
+  jupitervel = pjupiter/Mjupiter
+  jupiter.pos = jupiter.pos + dt*jupitervel
+  t += dt
+  
+
