@@ -2,8 +2,6 @@ GlowScript 2.7 VPython
 
 #Model of the Jupiter System
 
-#What this model still needs: an animation of the spacecraft's motion within the system, given its expected trajectory
-
 G = 6.67e-11
 
 io_distance = 421.7e6
@@ -36,13 +34,14 @@ callisto.mass = 1.0759e23
 
 scene.range=1.25*mag(callisto.pos)
 
-#clipper.mass = 352
-#clipper.v = 8800
+clipper = sphere(pos = vec(2*callisto_distance,1*callisto_distance,0*callisto_distance), radius = 2000*io_radius, color=color.red, make_trail = True)
+clippervel = 8800 * norm(vec(-10,0,0)) #With this you can change the direction of the clipper's velocity
+clipper.mass = 2616
 
-dt = 10
+dt = 5
 
 while True:
-        rate(5000)
+        rate(50000)
 
 # IO
 
@@ -79,5 +78,14 @@ while True:
         Fcallisto = G * callisto.mass * jupiter.mass/(magrc)**2 * rcunit 
         callistovel = callistovel - Fcallisto/callisto.mass * dt 
         callisto.pos = callisto.pos + callistovel * dt 
+        
+#CLIPPER
+        
+        rclip = clipper.pos - jupiter.pos
+        magrclip = mag(rclip)
+        rclipunit = norm(rclip)
+        Fclipper = G * clipper.mass * jupiter.mass / (magrclip)**2 * rclipunit
+        clippervel = clippervel - Fclipper/clipper.mass * dt
+        clipper.pos = clipper.pos + clippervel * dt
         
         
