@@ -1,10 +1,5 @@
 GlowScript 2.7 VPython
 
-G = 6.67e-11
-earth_mass = 5.972e24
-earth_radius = 6371e3
-earth = sphere(pos = vec(0,0,0), radius=earth_radius, color=color.green)
-
 clipper_mass=6001 #6001 kg,including scientific payload
 #boosters used: Five-segment SRBS
 booster_mass=1180000 #1,180,000 kg
@@ -32,7 +27,7 @@ drag_co=0.09 #Assume that the rocekt has a drag coefficient of half of a streaml
 
 rho=1.25 #density in kg/m^3
 launch_direction=norm(vec(1,1,0)) #direction in which the rocket is launched
-rocket=sphere(pos=vec(earth_radius+1,1,0),radius=rocket_diameter/2,color=color.orange)
+rocket=sphere(pos=vec(1,1,0),radius=rocket_diameter/2,color=color.orange)
 rockettrail=attach_trail(rocket)
 rocket.v=v_rocket_initial*launch_direction
 rocket.m=launch_mass #rocket mass starts as
@@ -45,8 +40,6 @@ F_drag=-launch_direction*(((1/2)*rho)*((mag(rocket.v)**2)*drag_co*A))
 print (rocket.v)
 while t<1400:
   rate(100000)
-  
-  
   rho=1/(mag(rocket.pos)**2)
   if t<booster_burntime:
     booster_mass=1180000-564*t
@@ -56,18 +49,7 @@ while t<1400:
   if mag(rocket.v)==0 and t<1:
     direction=launch_direction
   F_drag=-direction*(((1/2)*rho)*((mag(rocket.v))**2)*drag_co*A)
-  
-  if t<booster_burntime:
-      r = rocket.pos - earth.pos
-      runit = norm(r)
-      F_gravity = G * earth_mass * (clipper_mass + 2 * booster_mass + rocket_stage1_mass + rocket_stage2_mass) / mag(r)**2 * runit
-  elif t<stage1_burntime:
-      F_gravity = G * earth_mass * (clipper_mass + rocket_stage1_mass + rocket_stage2_mass) / mag(r)**2 * runit
-  elif t<stage2_burntime:
-      F_gravity = G * earth_mass * (clipper_mass + rocket_stage2_mass) / mag(r)**2 * runit
-  else:
-      F_gravity = G * earth_mass * (clipper_mass) / mag(r)**2 * runit
-  Fnet=F_thrust+F_drag+F_gravity
+  Fnet=F_thrust+F_drag
   if t>booster_burntime:
     F_thrust=direction*(stage1_thrust)
   if t>stage1_burntime:
