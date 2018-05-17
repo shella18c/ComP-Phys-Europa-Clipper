@@ -1,0 +1,322 @@
+GlowScript 2.7 VPython
+
+
+#These are the initial conditions. You should modify the launchday and direction of v
+#You can also modify the marsrocketdist to adjust what is considered a "success" in reaching Mars
+launchday=0 #day to launch
+
+rinitial=5.6*6.4e6 #initial distance of rocket from center of earth
+marsrocketdist=500*6.8e6 #distance from mars considered a success
+vinitial=5e3 #initial speed of rocket
+v = vinitial*norm(vec(2,-4.6, 0)) #initial velocity of rocket; change the direction only
+
+#pos unit is m
+#time unit is s
+
+
+venuspos = 1000*vec(8.812987360201445E+07, 6.153291128353178E+07,0)
+venusvel = 1000*vec(-1.985028346016295E+01, 2.876468054694921E+01,0)
+
+earthpos = 1000*vec(6.895232097865719E+07, 1.304972824047199E+08,0)
+earthvel = 1000*vec(-2.668795410599117E+01, 1.403825976547256E+01,0)
+
+marspos = 1000*vec(-1.909858467800430E+08, -1.411827287656426E+08,0)
+marsvel = 1000*vec(1.539923350680810E+01, -1.735315999421127E+01,0)
+
+jupiterpos = 1000*vec(6.794641004534719E+08,-3.095211220368358E+08,0)
+jupitervel = 1000*vec(5.258562961954226E+00, 1.250573240287679E+01,0)
+
+#constants
+AU=1000*149597871 #AU in m
+G=6.67384e-11
+
+#diameters used for drawing sun, mars, and earth; diameters are not to scale
+Dsun=0.3*AU
+Dearth=0.1*AU
+Dmars=0.1*AU
+Djupiter=0.1*AU
+Dvenus = 0.1*AU
+
+
+#mass
+Msun=1.989e30
+Mearth=5.97219e24
+Mmars=6.4185e23
+Mjupiter=1.898e27
+Mvenus=4.867e24
+Mrocket=1e4
+'''
+#time
+day=24*3600
+dt=2*3600
+t=0
+'''
+
+clipper_mass=6001 #6001 kg,including scientific payload
+#boosters used: Five-segment SRBS
+booster_mass=1180000 #1,180,000 kg
+booster_fuel_mass=1180000-1110000
+booster_thrust=32000e3 #32000 kN
+#boosters burn for 124 seconds and drop
+booster_burntime=124
+rocket_stage1_mass=979452 #979,452kg
+stage1_burntime=363 #stage1 burns for 363 seconds before dropping
+stage1_fuel_mass=979452-85270
+stage1_thrust=7440e3 #7440 kN
+
+rocket_stage2_mass=30710 #30710kg,
+#stage2 burns for 1125 seconds before dropping
+stage2_fuel_mass=30710-3490
+stage2_thrust=110.1e3 #110.1 kN
+stage2_burntime=1125
+ 
+launch_mass=clipper_mass+rocket_stage1_mass+rocket_stage2_mass+booster_mass
+rocket_diameter=8.4 #8.4 meters in diameter
+v_rocket_initial=0 # velocity relative to earth
+A=3.1415*(rocket_diameter**2)
+r_rocket_initial=6.4e3 # distance from earth's center 
+drag_co=0.09 #Assume that the rocekt has a drag coefficient of half of a streamlined body
+
+roh=1.25 #density in kg/m^3
+launch_direction=norm(vec(1,1,0)) #direction in which the rocket is launched
+rocket=sphere(pos=vec(earth.pos+rinitial),radius=rocket_diameter/2,color=color.orange)
+rockettrail=attach_trail(rocket)
+rocket.v=(v_rocket_initial+earthvel)*launch_direction
+rocket.m=launch_mass #rocket mass starts as
+dt=0.01
+t=0
+count=0
+F_thrust=launch_direction*(booster_thrust+stage1_thrust)
+
+F_drag=-launch_direction*(((1/2)*roh)*((mag(rocket.v)**2)*drag_co*A))
+print (rocket.v)
+while t<1400:
+  rate(100000)
+  roh=1/(mag(rocket.pos)**2)
+  if t<booster_burntime:
+    booster_mass=1180000-564*t
+  if t<stage1_burntime:
+    rocket_stage1_mass=979452-810*t
+  launch_mass=clipper_mass+rocket_stage1_mass+rocket_stage2_mass+booster_mass
+  if mag(rocket.v)==0 and t<1:
+    direction=launch_direction
+  F_drag=-direction*(((1/2)*roh)*((mag(rocket.v))**2)*drag_co*A)
+  
+  r1 = earth.pos - rocket.pos                        #sets r to equal distance from earth to the rocket for earth F calculation
+  r2 = mars.pos - rocket.pos                         #sets r to equal distance from mars to the rocket for marsF calculation
+  r3 = sun.pos - rocket.pos   
+  r4 = venus.pos - rocket.pos
+  r5 = jupiter.pos - rocket.pos
+  venusF = (G*Mvenus*Mrocket)*r4/mag(r4)**3
+  jupiterF = (G*Mjupiter*Mrocket)*r5/mag(r5)**3
+  earthF = (G*Mearth*Mrocket)*r1/mag(r1)**3          #calculates force of earth for that distance of r
+  marsF = (G*Mmars*Mrocket)*r2/mag(r2)**3            #calculates force of mars for that distance of r
+  sunF = (G*Msun*Mrocket)*r3/mag(r3)**3 
+  
+  Fnet=F_thrust+F_drag+venusF+marsF+earthF+jupiterF+sunF
+  if t>booster_burntime:
+    F_thrust=direction*(stage1_thrust)
+  if t>stage1_burntime:
+    F_thrust=direction*(stage2_thrust)
+    rocket.m=launch_mass-booster_mass-rocket_stage1_mass #boosters and stage 1 drop
+    rocket_stage2_mass=30710-24.1*t
+  
+  if t>stage2_burntime:
+    F_thrust=direction*0
+    rocket.m=rocket.m-rocket_stage2_mass #stage 2 drops from the clipper
+    
+  count=count+1
+  #print (count)
+    
+  rocket.v=rocket.v+(Fnet/rocket.m)*dt
+  rocket.pos=rocket.pos+rocket.v*dt
+  direction=norm(rocket.v)
+  t=t+dt
+  
+#set up 3D scene
+scene = display(width=430, height=400, userspin=False, userzoom=True)
+scene.append_to_title("""<br>Click the simulation to begin.""")
+scene.append_to_title("""<br><br>Assumptions include:""")
+scene.append_to_title("""<br>1. The rocket's speed near Earth's surface is 12 km/s, relative to Earth.""")
+scene.append_to_title("""<br>2. The velocity of the rocket at an altitude of 2 earth radii is 5 km/s in the direction shown by the arrow.""")
+scene.append_to_title("""<br>3. The thrusters are off during the entire flight. The net force on the rocket is the gravitational force by the Sun, Earth, and Mars.<br><br>""")
+
+#scales for arrows
+scale1=Dsun
+
+# set up 3D objects
+sun=sphere(dispay=scene, pos=vec(0,0,0), radius=Dsun/2, color=color.yellow)
+mars=sphere(dispay=scene, pos=marspos, radius=Dmars/2, color=color.red)
+earth=sphere(dispay=scene, pos=earthpos, radius=Dearth/2, color=color.blue)
+venus=sphere(dispay=scene, pos=venuspos, radius=Dvenus/2, color=color.white)
+jupiter=sphere(dispay=scene, pos=jupiterpos, radius=Djupiter/2, color=color.orange)
+# rocket=sphere( pos=earth.pos+rinitial*norm(v), radius=earth.radius/2, color=color.orange)
+# rocketarrow1=arrow(dispay=scene, pos=earth.pos, axis=scale1*norm(v), color=color.white)
+
+# create trails
+marstrail=attach_trail(mars, radius=0.2*Dmars, trail_type="points", interval=2, retain=250)
+earthtrail=attach_trail(earth, radius=0.2*Dearth, trail_type="points", interval=2, retain=150)
+venustrail = attach_trail(venus, radis = 0.2*Dvenus, trail_type='points', interval=2, retain=150)
+jupitertrail = attach_trail(jupiter, radius=0.2*Djupiter, trail_type='points', interval=2, retain=1000)
+# rockettrail=attach_trail(rocket, radius=0.2*rocket.radius, trail_type="points", interval=2, retain=500)
+# rockettrail.stop
+
+#create strings and labels
+tstr="Time: {:.0f} days".format(0)
+tlabel=label(pos=vector(0,1.2*mag(marspos),0), text=tstr)
+launchstr="Starting Date: Nov. 24, 2021. \n"+launchday+" days until launch. \n Click to Run."
+launchlabel=label(pos=vector(0,-1.2*mag(marspos),0), text=launchstr)
+
+#set the range
+scene.range=1.5*mag(jupiterpos)
+
+#this function is called when the rocket is launched
+# it sets booleans and sets the initial velocitiy and momentum of the rocket
+def launchRocket():
+    global vrocket, procket, rocketLaunched, justNowLaunched
+    rocketLaunched=True
+    justNowLaunched=True
+    vrocket=vearth+v
+    procket=Mrocket*vrocket
+
+# initial positions, velocities, and momenta of all objects
+earth.pos=earthpos
+
+mars.pos=marspos
+vearth=earthvel
+
+vmars=marsvel
+pearth=Mearth*vearth
+pmars=Mmars*vmars
+procket=rocket.m*rocket.v
+pvenus=Mvenus*venusvel
+vvenus = venusvel
+pjupiter =Mjupiter*jupitervel
+vjupiter=jupitervel
+
+#booleans
+rocketLaunched=False
+run = False
+justNowLaunched=False
+
+# pause and then change the message
+scene.waitfor('click')
+launchstr="Launch Day "+launchday
+launchlabel.text=launchstr
+
+
+while True:
+        rate(1000)
+
+#########  Add code here
+        #earth
+        # vearth = vearth - dt*((G*Msun)/mag(earthpos)**3)*earth.pos
+        # earth.pos=earth.pos + vearth*dt
+        r1 = sun.pos - earth.pos         #sets r to be the distance from the sun to earth's orbit
+        r2 = mars.pos - earth.pos
+        r3 = venus.pos - earth.pos
+        r4 = jupiter.pos - earth.pos
+        sunF = (1*G*Msun*Mearth)*r1/mag(r1)**3    #force of sun on earth at that distance of r
+        marsF = (1*G*Mmars*Mearth)*r2/mag(r2)**3
+        venusF = (1*G*Mvenus*Mearth)*r3/mag(r3)**3
+        jupiterF = (1*G*Mjupiter*Mearth)*r4/mag(r4)**3
+        totalF = sunF+marsF+venusF+jupiterF
+        pearth = pearth + dt*totalF              #updates momentum of earth
+        vearth = pearth/Mearth                   #updates velocity of earth using momentum (p = m*v)
+        earth.pos = earth.pos + dt*vearth        #updates earth's position
+        #venus
+        r1 = sun.pos - venus.pos
+        r2 = earth.pos - venus.pos
+        r3 = mars.pos - venus.pos
+        r4 = jupiter.pos - venus.pos
+        sunF = (1*G*Msun*Mvenus)*r1/mag(r1)**3
+        earthF = (1*G*Mearth*Mvenus)*r2/mag(r2)**3
+        marsF = (1*G*Mmars*Mvenus)*r3/mag(r3)**3
+        jupiterF = (1*G*Mvenus*Mjupiter)*r4/mag(r4)**3
+        totalF = sunF+earthF+marsF+jupiterF
+        pvenus = pvenus + dt*totalF
+        vvenus = pvenus/Mvenus
+        venus.pos=venus.pos + dt*vvenus
+
+        
+        #mars
+        r1 = sun.pos - mars.pos    
+        r2 = venus.pos - mars.pos
+        r3 = earth.pos - mars.pos
+        r4 = jupiter.pos - mars.pos
+        sunF = (1*G*Msun*Mmars)*r1/mag(r1)**3    
+        venusF = (1*G*Mvenus*Mmars)*r2/mag(r2)**3
+        earthF = (1*G*Mearth*Mmars)*r3/mag(r3)**3
+        jupiterF = (1*G*Mjupiter*Mmars)*r4/mag(r4)**3
+        totalF = sunF+venusF+earthF+jupiterF
+        pmars = pmars + dt*totalF 
+        vmars = pmars/Mmars
+        mars.pos = mars.pos + dt*vmars
+        
+        #jupiter
+        r1 = sun.pos - jupiter.pos
+        r2 = venus.pos - jupiter.pos
+        r3 = earth.pos - jupiter.pos
+        r4 = mars.pos - jupiter.pos
+        sunF = (1*G*Msun*Mjupiter)*r1/mag(r1)**3
+        venusF = (1*G*Mvenus*Mjupiter)*r2/mag(r2)**3
+        earthF = (1*G*Mearth*Mjupiter)*r3/mag(r3)**3
+        marsF = (1*G*Mmars*Mjupiter)*r4/mag(r4)**3
+        totalF = sunF+marsF+earthF+venusF
+        pjupiter = pjupiter + dt*totalF
+        vjupiter = pjupiter/Mjupiter
+        jupiter.pos = jupiter.pos + dt*vjupiter
+        
+        #rocket
+        # vrocket = vrocket - dt*((G*Msun)/mag(rocket.pos)**3)*rocket.pos
+        # rocket.pos = rocket.pos + vrocket*dt
+##########
+
+# launched, then compute Fnet, procket, and rocket.pos
+        if(rocketLaunched):
+            rocketarrow1.visible=False
+
+#########  Add code here            
+
+            #compute Fnet, procket, and rocket.pos
+            r1 = earth.pos - rocket.pos                        #sets r to equal distance from earth to the rocket for earth F calculation
+            r2 = mars.pos - rocket.pos                         #sets r to equal distance from mars to the rocket for marsF calculation
+            r3 = sun.pos - rocket.pos   
+            r4 = venus.pos - rocket.pos
+            r5 = jupiter.pos - rocket.pos
+            venusF = (G*Mvenus*Mrocket)*r4/mag(r4)**3
+            jupiterF = (G*Mjupiter*Mrocket)*r5/mag(r5)**3
+            earthF = (G*Mearth*Mrocket)*r1/mag(r1)**3          #calculates force of earth for that distance of r
+            marsF = (G*Mmars*Mrocket)*r2/mag(r2)**3            #calculates force of mars for that distance of r
+            sunF = (G*Msun*Mrocket)*r3/mag(r3)**3              #calculates force of sun for that distance of r
+            Fnet = earthF + marsF + sunF + venusF + jupiterF                      #rocket is experiencing force from all three bodies
+            
+            procket = procket + dt*Fnet                        #updates momentum of rocket using total force of system
+            vrocket = procket/Mrocket                          #updates velocity of rocket using new momentum
+            rocket.pos = rocket.pos + dt*vrocket               #updates position of rocket
+
+#########
+
+            if(justNowLaunched):
+                justNowLaunched=False
+        #if not launched, just make the rocket at earth's position + its initial distance in the direction of its velocity
+        else:
+            rocket.pos=earth.pos+rinitial*norm(v)
+
+        #rocketarrow
+        rocketarrow1.pos=rocket.pos
+
+        #update time and label
+        t=t+dt
+        tstr="Time: {:.0f} days".format(t/day)
+        tlabel.text=tstr
+
+        #launch rocket on the launch day        
+        if(t/day>launchday and rocketLaunched==False):
+            launchRocket()
+        
+        #arrival at Mars
+        if(mag(rocket.pos-mars.pos)<marsrocketdist):
+            launchstr="Arrival at Mars. \nTravel time = {:.0f} days".format(t/day-launchday)
+            launchlabel.text=launchstr
+            scene.waitfor('click')
