@@ -1,0 +1,70 @@
+GlowScript 2.7 VPython
+
+clipper_mass=6001 #6001 kg,including scientific payload
+#boosters used: Five-segment SRBS
+booster_mass=1180000 #1,180,000 kg
+booster_fuel_mass=1180000-1110000
+booster_thrust=32000e3 #32000 kN
+#boosters burn for 124 seconds and drop
+booster_burntime=124
+rocket_stage1_mass=979452 #979,452kg
+stage1_burntime=363 #stage1 burns for 363 seconds before dropping
+stage1_fuel_mass=979452-85270
+stage1_thrust=7440e3 #7440 kN
+
+rocket_stage2_mass=30710 #30710kg,
+#stage2 burns for 1125 seconds before dropping
+stage2_fuel_mass=30710-3490
+stage2_thrust=110.1e3 #110.1 kN
+stage2_burntime=1125
+ 
+launch_mass=clipper_mass+rocket_stage1_mass+rocket_stage2_mass+booster_mass
+rocket_diameter=8.4 #8.4 meters in diameter
+v_rocket_initial=0 # velocity relative to earth
+A=3.1415*(rocket_diameter**2)
+r_rocket_initial=6.4e3 # distance from earth's center 
+drag_co=0.09 #Assume that the rocekt has a drag coefficient of half of a streamlined body
+
+roh=1.25 #density in kg/m^3
+launch_direction=norm(vec(1,1,0)) #direction in which the rocket is launched
+rocket=sphere(pos=vec(1,1,0),radius=rocket_diameter/2,color=color.orange)
+rockettrail=attach_trail(rocket)
+rocket.v=v_rocket_initial*launch_direction
+rocket.m=launch_mass #rocket mass starts as
+dt=0.01
+t=0
+count=0
+F_thrust=launch_direction*(booster_thrust+stage1_thrust)
+
+F_drag=-launch_direction*(((1/2)*roh)*((mag(rocket.v)**2)*drag_co*A))
+print (rocket.v)
+while t<1400:
+  rate(100000)
+  roh=1/(mag(rocket.pos)**2)
+  if t<booster_burntime:
+    booster_mass=1180000-564*t
+  if t<stage1_burntime:
+    rocket_stage1_mass=979452-810*t
+  launch_mass=clipper_mass+rocket_stage1_mass+rocket_stage2_mass+booster_mass
+  if mag(rocket.v)==0 and t<1:
+    direction=launch_direction
+  F_drag=-direction*(((1/2)*roh)*((mag(rocket.v))**2)*drag_co*A)
+  Fnet=F_thrust+F_drag
+  if t>booster_burntime:
+    F_thrust=direction*(stage1_thrust)
+  if t>stage1_burntime:
+    F_thrust=direction*(stage2_thrust)
+    rocket.m=launch_mass-booster_mass-rocket_stage1_mass #boosters and stage 1 drop
+    rocket_stage2_mass=30710-24.1*t
+  
+  if t>stage2_burntime:
+    F_thrust=direction*0
+    rocket.m=rocket.m-rocket_stage2_mass #stage 2 drops from the clipper
+    
+  count=count+1
+  #print (count)
+    
+  rocket.v=rocket.v+(Fnet/rocket.m)*dt
+  rocket.pos=rocket.pos+rocket.v*dt
+  direction=norm(rocket.v)
+  t=t+dt
