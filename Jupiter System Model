@@ -2,6 +2,8 @@ GlowScript 2.7 VPython
 
 #Model of the Jupiter System
 
+#What this model still needs: an animation of the spacecraft's motion within the system, given its expected trajectory
+
 G = 6.67e-11
 
 io_distance = 421.7e6
