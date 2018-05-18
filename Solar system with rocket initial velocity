@@ -1,0 +1,157 @@
+GlowScript 2.7 VPython
+
+
+venuspos = 1000*vec(8.812987360201445E+07, 6.153291128353178E+07,0)
+venusvel = 1000*vec(-1.985028346016295E+01, 2.876468054694921E+01,0)
+
+earthpos = 1000*vec(6.895232097865719E+07, 1.304972824047199E+08,0)
+earthvel = 1000*vec(-2.668795410599117E+01, 1.403825976547256E+01,0)
+
+marspos = 1000*vec(-1.909858467800430E+08, -1.411827287656426E+08,0)
+marsvel = 1000*vec(1.539923350680810E+01, -1.735315999421127E+01,0)
+
+jupiterpos = 1000*vec(6.794641004534719E+08,-3.095211220368358E+08,0)
+jupitervel = 1000*vec(5.258562961954226E+00, 1.250573240287679E+01,0)
+
+#constants
+AU=1000*149597871 #AU in m
+G=6.67384e-11
+
+#diameters used for drawing sun, mars, and earth; diameters are not to scale
+Dsun=0.5*AU
+Dearth=0.2*AU
+Dmars=0.2*AU
+Djupiter=0.3*AU
+Dvenus = 0.2*AU
+
+
+#mass
+Msun=1.989e30
+Mearth=5.97219e24
+Mmars=6.4185e23
+Mjupiter=1.898e27
+Mvenus=4.867e24
+
+# set up 3D objects
+sun=sphere(dispay=scene, pos=vec(0,0,0), radius=Dsun, color=color.yellow)
+mars=sphere(dispay=scene, pos=marspos, radius=Dmars, color=color.red)
+earth=sphere(dispay=scene, pos=earthpos, radius=Dearth, color=color.blue)
+venus=sphere(dispay=scene, pos=venuspos, radius=Dvenus, color=color.white)
+jupiter=sphere(dispay=scene, pos=jupiterpos, radius=Djupiter, color=color.orange)
+
+
+clipper_mass=6001 #6001 kg,including scientific payload
+#boosters used: Five-segment SRBS
+booster_mass=1180000 #1,180,000 kg
+booster_fuel_mass=1180000-1110000
+booster_thrust=32000e3 #32000 kN
+#boosters burn for 124 seconds and drop
+booster_burntime=124
+rocket_stage1_mass=979452 #979,452kg
+stage1_burntime=363 #stage1 burns for 363 seconds before dropping
+stage1_fuel_mass=979452-85270
+stage1_thrust=7440e3 #7440 kN
+
+rocket_stage2_mass=30710 #30710kg,
+#stage2 burns for 1125 seconds before dropping
+stage2_fuel_mass=30710-3490
+stage2_thrust=110.1e3 #110.1 kN
+stage2_burntime=1125
+ 
+
+
+launch_direction=norm(vec(-5,5,0)) #direction in which the rocket is launched
+rocket=sphere(pos=earth.pos+6.371e+6*launch_direction,radius=0.1*AU,color=color.orange)
+rockettrail=attach_trail(rocket)
+rocket.v=mag(vec(1.91842e+4,3207.29,0))*launch_direction
+rocket.m=clipper_mass 
+dt=2*3600
+t=0
+count=0
+
+  
+  
+
+
+# create trails
+
+
+
+earth.pos=earthpos
+
+mars.pos=marspos
+vearth=earthvel
+
+vmars=marsvel
+
+
+vvenus = venusvel
+
+vjupiter=jupitervel
+
+
+while True:
+        rate(1000)
+        r1 = sun.pos - earth.pos         #sets r to be the distance from the sun to earth's orbit
+        r2 = mars.pos - earth.pos
+        r3 = venus.pos - earth.pos
+        r4 = jupiter.pos - earth.pos
+        sunF = (G*Msun*r1)/mag(r1)**3    #force of sun on earth at that distance of r
+        marsF = (G*Mmars*r2)/mag(r2)**3
+        venusF = (G*Mvenus*r3)/mag(r3)**3
+        jupiterF = (G*Mjupiter*r4)/mag(r4)**3
+        totalF = sunF+marsF+venusF+jupiterF
+        earthvel = earthvel+dt*(totalF)                   #updates velocity of earth using momentum (p = m*v)
+        earth.pos = earth.pos + dt*earthvel        #updates earth's position
+        #venus
+        r1 = sun.pos - venus.pos
+        r2 = earth.pos - venus.pos
+        r3 = mars.pos - venus.pos
+        r4 = jupiter.pos - venus.pos
+        sunF = (G*Msun*r1)/mag(r1)**3
+        earthF = (G*Mearth*r2)/mag(r2)**3
+        marsF = (G*Mmars*r3)/mag(r3)**3
+        jupiterF = (G*Mjupiter*r4)/mag(r4)**3
+        totalF = sunF+earthF+marsF+jupiterF
+        vvenus = vvenus+dt*(totalF)
+        venus.pos=venus.pos + dt*vvenus
+
+        
+        #mars
+        r1 = sun.pos - mars.pos    
+        r2 = venus.pos - mars.pos
+        r3 = earth.pos - mars.pos
+        r4 = jupiter.pos - mars.pos
+        sunF = (G*Msun)*r1/mag(r1)**3    
+        venusF = (G*Mvenus)*r2/mag(r2)**3
+        earthF = (G*Mearth)*r3/mag(r3)**3
+        jupiterF = (G*Mjupiter)*r4/mag(r4)**3
+        totalF = sunF+venusF+earthF+jupiterF
+        vmars=vmars+dt*(totalF)
+        mars.pos = mars.pos + dt*vmars
+        
+        #jupiter
+        r1 = sun.pos - jupiter.pos
+        r2 = venus.pos - jupiter.pos
+        r3 = earth.pos - jupiter.pos
+        r4 = mars.pos - jupiter.pos
+        sunF = (G*Msun)*r1/mag(r1)**3
+        venusF = (G*Mvenus)*r2/mag(r2)**3
+        earthF = (G*Mearth)*r3/mag(r3)**3
+        marsF = (G*Mmars)*r4/mag(r4)**3
+        totalF = sunF+marsF+earthF+venusF
+        vjupiter=vjupiter+dt*(totalF)
+        jupiter.pos = jupiter.pos + dt*vjupiter
+        
+        r1 = sun.pos - rocket.pos
+        r2 = venus.pos - rocket.pos
+        r3 = earth.pos - rocket.pos
+        r4 = mars.pos - rocket.pos
+        r5 = jupiter.pos - rocket.pos
+        sunF = (G*Msun)*r1/mag(r1)**3
+        venusF = (G*Mvenus)*r2/mag(r2)**3
+        earthF = (G*Mearth)*r3/mag(r3)**3
+        marsF = (G*Mmars)*r4/mag(r4)**3
+        jupiterF = (G*Mjupiter)*r5/mag(r5)**3
+        rocket.v=rocket.v+(dt*(venusF+earthF+sunF+marsF+jupiterF))
+        rocket.pos=rocket.pos+rocket.v*dt
