@@ -65,7 +65,7 @@ rockettrail.stop
 #create strings and labels
 tstr="Time: {:.0f} days".format(0)
 tlabel=label(pos=vector(0,1.2*mag(jupiterpos),0), text=tstr)
-launchstr="Starting Date: Aug. 29, 2015. \n"+launchday+" days until launch. \n Click to Run."
+launchstr="Starting Date: November 24, 2021. \n"+launchday+" days until launch. \n Click to Run."
 launchlabel=label(pos=vector(0,-1.2*mag(jupiterpos),0), text=launchstr)
 
 #set the range
