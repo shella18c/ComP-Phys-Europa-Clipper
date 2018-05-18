@@ -231,7 +231,7 @@ while Arrival == False:
             io = sphere(pos = (vec(-io_distance, 0,0)), radius = 10000*io_radius, color=color.yellow, make_trail = True)
             europa = sphere(pos = vec(europa_distance,0,0), radius = 10000*europa_radius, color=color.white, make_trail = True)
             ganymede = sphere(pos = vec(ganymede_distance,0,0), radius = 10000*ganymede_radius, color=color.cyan, make_trail = True)
-            callisto = sphere(pos = vec(-callisto_distance,0,0), radius = 10000*callisto_radius, color=color.purple, make_trail = True)
+            callisto = sphere(pos = vec(-callisto_distance,0,0), radius = 10000*callisto_radius, color=color.blue, make_trail = True)
 
 #Initial velocities, in m/s
 
