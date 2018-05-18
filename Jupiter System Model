@@ -2,7 +2,10 @@ GlowScript 2.7 VPython
 
 #Model of the Jupiter System
 
+#Constants
+
 G = 6.67e-11
+max_thrust = 645
 
 io_distance = 421.7e6
 europa_distance = 670.9e6
@@ -16,15 +19,15 @@ ganymede_radius=2634.1
 callisto_radius=2410.3
 
 jupiter = sphere(pos = vec(0,0,0), radius = 2000*jupiter_radius, color=color.orange)
-io = sphere(pos = vec(io_distance, 0, 0), radius = 2000*io_radius, color=color.yellow, make_trail = True)
-europa = sphere(pos = vec(europa_distance,0,0), radius = 2000*europa_radius, color=color.white, make_trail = True)
-ganymede = sphere(pos = vec(ganymede_distance,0,0), radius = 2000*ganymede_radius, color=color.cyan, make_trail = True)
-callisto = sphere(pos = vec(callisto_distance,0,0), radius = 2000*callisto_radius, color=color.purple, make_trail = True)
+io = sphere(pos = (vec(-io_distance, 0,0)), radius = 4000*io_radius, color=color.yellow, make_trail = True)
+europa = sphere(pos = vec(europa_distance,0,0), radius = 4000*europa_radius, color=color.white, make_trail = True)
+ganymede = sphere(pos = vec(ganymede_distance,0,0), radius = 4000*ganymede_radius, color=color.cyan, make_trail = True)
+callisto = sphere(pos = vec(-callisto_distance,0,0), radius = 4000*callisto_radius, color=color.purple, make_trail = True)
 
-iovel = 17334 * vec(0,1,0)
+iovel = 17334 * vec(0,-1,0)
 europavel = 13740 * vec(0,1,0)
 ganymedevel = 10880 * vec(0,1,0)
-callistovel = 8204 * vec(0,1,0)
+callistovel = 8204 * vec(0,-1,0)
 
 jupiter.mass = 1.898e27
 io.mass = 8.931e22
@@ -34,14 +37,17 @@ callisto.mass = 1.0759e23
 
 scene.range=1.25*mag(callisto.pos)
 
-clipper = sphere(pos = vec(2*callisto_distance,1*callisto_distance,0*callisto_distance), radius = 2000*io_radius, color=color.red, make_trail = True)
-clippervel = 8800 * norm(vec(-10,0,0)) #With this you can change the direction of the clipper's velocity
+thrust_counter = 0
+thrust_counter_2 = 0
+
+clipper = sphere(pos = vec(2*callisto_distance,1*callisto_distance,0*callisto_distance), radius = 4000*io_radius, color=color.red, make_trail = True)
+clippervel = 13349 * norm(vec(-1,-1,0)) #With this you can change the direction of the clipper's velocity
 clipper.mass = 2616
 
-dt = 5
+dt = 10
 
 while True:
-        rate(50000)
+        rate(20000)
 
 # IO
 
@@ -84,8 +90,48 @@ while True:
         rclip = clipper.pos - jupiter.pos
         magrclip = mag(rclip)
         rclipunit = norm(rclip)
+
         Fclipper = G * clipper.mass * jupiter.mass / (magrclip)**2 * rclipunit
-        clippervel = clippervel - Fclipper/clipper.mass * dt
+        
+        rci = clipper.pos - io.pos
+        magrci = mag(rci)
+        rciunit = norm(rci)
+        
+        Fci = G * clipper.mass * io.mass / (magrci)**2 * rciunit
+        
+        rce = clipper.pos - europa.pos
+        magrce = mag(rce)
+        rceunit = norm(rce)
+        
+        Fce = G * clipper.mass * europa.mass / (magrce)**2 * rceunit
+           
+        rcg = clipper.pos - ganymede.pos
+        magrcg = mag(rcg)
+        rcgunit = norm(rcg)
+        
+        Fcg = G * clipper.mass * ganymede.mass / (magrcg)**2 * rcgunit
+        
+        rcc = clipper.pos - callisto.pos
+        magrcc = mag(rcc)
+        rccunit = norm(rcc)
+        
+        Fcc = G * clipper.mass * callisto.mass / (magrcc)**2 * rccunit
+        
+        if magrclip < ganymede_distance:
+            if thrust_counter < 2000:
+                Fthruster = -max_thrust * norm(clippervel)
+                thrust_counter += 1
+            else:
+                Fthruster = 0 * norm(clippervel)
+        else:
+            Fthruster = 0 * norm(clippervel)
+            
+        if mag(clippervel) < 4000:
+            if thrust_counter_2 < 150:
+                Fthruster = max_thrust * norm(-clippervel)
+                thrust_counter_2 += 1
+        
+        Fnet = Fclipper + Fci + Fce + Fcg + Fcc - Fthruster
+        
+        clippervel = clippervel - Fnet/clipper.mass * dt
         clipper.pos = clipper.pos + clippervel * dt
-        
-        
