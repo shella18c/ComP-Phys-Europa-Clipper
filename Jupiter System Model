@@ -1,16 +1,25 @@
 GlowScript 2.7 VPython
 
 #Model of the Jupiter System
+#Stephen Schmidt, Alex Mcevoy, Chris Moncla, Chris Shella
+#May 18, 2018
+#Comments and code by Stephen Schmidt
+
 
 #Constants
 
-G = 6.67e-11
-max_thrust = 645
+G = 6.67e-11                        #Universal Gravitational Constant
+max_thrust = 645                    #Maximum thrust of the spacecraft (645 Newtons)
 
-io_distance = 421.7e6
-europa_distance = 670.9e6
-ganymede_distance = 1070.4e6
-callisto_distance = 1882.7e6
+#Distances to each of the moons from Jupiter
+#Each value is an average value and measured in meters
+
+io_distance = 421.7e6               
+europa_distance = 670.9e6           
+ganymede_distance = 1070.4e6        
+callisto_distance = 1882.7e6        
+
+#Radii of the bodies, in meters
 
 jupiter_radius=71492
 io_radius=1821.6
@@ -18,16 +27,25 @@ europa_radius=1560.8
 ganymede_radius=2634.1
 callisto_radius=2410.3
 
+#Setting up Jupiter and the moons' sizes, colors, and initial positions
+#Each body is scaled up by a large factor to allow them to be visible
+#This setup is theoretically possible, due to the 1:2:4 resonance between the orbits of Io, Europa, and Ganymede (Callisto does not have any orbital resonances)
+
 jupiter = sphere(pos = vec(0,0,0), radius = 2000*jupiter_radius, color=color.orange)
-io = sphere(pos = (vec(-io_distance, 0,0)), radius = 4000*io_radius, color=color.yellow, make_trail = True)
-europa = sphere(pos = vec(europa_distance,0,0), radius = 4000*europa_radius, color=color.white, make_trail = True)
-ganymede = sphere(pos = vec(ganymede_distance,0,0), radius = 4000*ganymede_radius, color=color.cyan, make_trail = True)
-callisto = sphere(pos = vec(-callisto_distance,0,0), radius = 4000*callisto_radius, color=color.purple, make_trail = True)
+io = sphere(pos = (vec(-io_distance, 0,0)), radius = 10000*io_radius, color=color.yellow, make_trail = True)
+europa = sphere(pos = vec(europa_distance,0,0), radius = 10000*europa_radius, color=color.white, make_trail = True)
+ganymede = sphere(pos = vec(ganymede_distance,0,0), radius = 10000*ganymede_radius, color=color.cyan, make_trail = True)
+callisto = sphere(pos = vec(-callisto_distance,0,0), radius = 10000*callisto_radius, color=color.purple, make_trail = True)
+
+#Initial velocities, in m/s
 
 iovel = 17334 * vec(0,-1,0)
 europavel = 13740 * vec(0,1,0)
 ganymedevel = 10880 * vec(0,1,0)
 callistovel = 8204 * vec(0,-1,0)
+
+#Masses of each body, in kg
+#Used later for gravitational force calculations
 
 jupiter.mass = 1.898e27
 io.mass = 8.931e22
@@ -35,28 +53,40 @@ europa.mass = 4.799e22
 ganymede.mass = 1.4819e23
 callisto.mass = 1.0759e23
 
+#Setting a specific area of view
+
 scene.range=1.25*mag(callisto.pos)
 
-thrust_counter = 0
-thrust_counter_2 = 0
+#Setting up the clipper's position, velocity, and mass
 
-clipper = sphere(pos = vec(2*callisto_distance,1*callisto_distance,0*callisto_distance), radius = 4000*io_radius, color=color.red, make_trail = True)
-clippervel = 13349 * norm(vec(-1,-1,0)) #With this you can change the direction of the clipper's velocity
+clipper = sphere(pos = vec(-3*callisto_distance,2*callisto_distance,0*callisto_distance), radius = 4000*io_radius, color=color.red, make_trail = True)
+clippervel = 13349 * norm(vec(1,-1.034,0)) #With this you can change the direction of the clipper's velocity, in the case of an actual encounter
 clipper.mass = 2616
 
-dt = 10
+#Time increment, frame rate, and counters
 
-while True:
-        rate(20000)
+dt = 10
+thrust_counter = 0      #For the Jupiter orbital insertion maneuver
+thrust_counter_2 = 0    #For the Europa flyby maneuver
+framerate = 20000
+t = 0
+
+#Iteration
+
+while t < 100000000:
+        rate(framerate)
+
+#Calculation of the gravitational forces and motion
+#The same process is used for each of the 4 moons
 
 # IO
 
-        ri = io.pos - jupiter.pos 
-        magri = mag(ri)
-        riunit=norm(ri) 
-        Fio = G * io.mass * jupiter.mass/(magri)**2 * riunit 
-        iovel = iovel - Fio/io.mass * dt 
-        io.pos = io.pos + iovel * dt 
+        ri = io.pos - jupiter.pos                                       #Vector in the direction of Jupiter from Io
+        magri = mag(ri)                                                 #Distance between Io and Jupiter
+        riunit=norm(ri)                                                 #Direction towards Jupiter from Io
+        Fio = G * io.mass * jupiter.mass/(magri)**2 * riunit            #Gravitational force on Io by Jupiter
+        iovel = iovel - Fio/io.mass * dt                                #New velocity of io
+        io.pos = io.pos + iovel * dt                                    #New position of Io
         
 # EUROPA        
         
@@ -86,30 +116,42 @@ while True:
         callisto.pos = callisto.pos + callistovel * dt 
         
 #CLIPPER
+
+#The clipper has to take into account gravitational forces from all of the moons as well as Jupiter
         
+#Force by Jupiter
+
         rclip = clipper.pos - jupiter.pos
         magrclip = mag(rclip)
         rclipunit = norm(rclip)
 
         Fclipper = G * clipper.mass * jupiter.mass / (magrclip)**2 * rclipunit
         
+#Force by Io
+
         rci = clipper.pos - io.pos
         magrci = mag(rci)
         rciunit = norm(rci)
         
         Fci = G * clipper.mass * io.mass / (magrci)**2 * rciunit
         
+#Force by Europa        
+
         rce = clipper.pos - europa.pos
         magrce = mag(rce)
         rceunit = norm(rce)
         
         Fce = G * clipper.mass * europa.mass / (magrce)**2 * rceunit
-           
+         
+#Force by Ganymede         
+         
         rcg = clipper.pos - ganymede.pos
         magrcg = mag(rcg)
         rcgunit = norm(rcg)
         
         Fcg = G * clipper.mass * ganymede.mass / (magrcg)**2 * rcgunit
+        
+#Force by Callisto        
         
         rcc = clipper.pos - callisto.pos
         magrcc = mag(rcc)
@@ -117,21 +159,32 @@ while True:
         
         Fcc = G * clipper.mass * callisto.mass / (magrcc)**2 * rccunit
         
-        if magrclip < ganymede_distance:
+#Maneuvers to adjust the orbit of the spacecraft
+#Maneuver 1: Jupiter orbital insertion
+#The craft needs to slow down to reach a stable orbit, so in this case it will burn its thruster while it is within the orbit of Ganymede for 20000 seconds
+
+        if magrclip < ganymede_distance:                    
             if thrust_counter < 2000:
-                Fthruster = -max_thrust * norm(clippervel)
+                Fthruster = -max_thrust/1.01 * norm(clippervel)
                 thrust_counter += 1
             else:
                 Fthruster = 0 * norm(clippervel)
         else:
             Fthruster = 0 * norm(clippervel)
             
-        if mag(clippervel) < 4000:
-            if thrust_counter_2 < 150:
-                Fthruster = max_thrust * norm(-clippervel)
+#Maneuver 2: Europa flyby adjustment
+#The craft will slightly change its orbit in 2000 seconds to reach an orbit where it will be able to fly by Europa
+            
+        if mag(clippervel) < 3600:
+            if thrust_counter_2 < 200:
+                Fthruster = max_thrust/1.01 * norm(-clippervel)
                 thrust_counter_2 += 1
-        
+
+#Calculation of the net force and the new velocity/position of the clipper
+
         Fnet = Fclipper + Fci + Fce + Fcg + Fcc - Fthruster
         
         clippervel = clippervel - Fnet/clipper.mass * dt
         clipper.pos = clipper.pos + clippervel * dt
+        
+        t += dt
